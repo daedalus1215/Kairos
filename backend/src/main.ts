@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import { networkInterfaces } from 'os';
 import { AppModule } from './app.module';
 import { ConfigurableIoAdapter } from './io-adapter';
 
@@ -39,9 +40,16 @@ const bootstrap = async (): Promise<void> => {
   SwaggerModule.setup('api', app, document);
 
   await app.listen(port, host);
-  const url = await app.getUrl();
-  console.log(`Kairos API running on ${url}`);
-  console.log(`Swagger documentation at ${url}/api`);
+
+  const nets = networkInterfaces();
+  const localIp = Object.values(nets)
+    .flat()
+    .find((iface) => iface && iface.family === 'IPv4' && !iface.internal)
+    ?.address ?? 'localhost';
+
+  console.log(`Kairos API running on http://localhost:${port} (local)`);
+  console.log(`Kairos API running on http://${localIp}:${port} (network)`);
+  console.log(`Swagger documentation at http://${localIp}:${port}/api`);
 };
 
 bootstrap();
