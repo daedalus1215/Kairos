@@ -1,11 +1,38 @@
-# React + TypeScript + Vite
+# Kairos Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Meeting management app built with React, TypeScript, Vite, and MUI.
 
-Currently, two official plugins are available:
+## Environment Configuration
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Copy `.env.example` and configure your API endpoint:
+
+```bash
+cp .env.example .env.development  # for local dev
+cp .env.example .env.production   # for production builds
+```
+
+The only required variable:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VITE_API_URL` | Backend API base URL | `http://localhost:3000` |
+
+Vite automatically loads `.env.development` during `npm run dev` and `.env.production` during `npm run build`.
+
+Do not commit `.env.production` to version control -- it is gitignored.
+
+## Getting Started
+
+```bash
+npm install
+npm run dev
+```
+
+## Build
+
+```bash
+npm run build
+```
 
 ## React Compiler
 
@@ -56,6 +83,7 @@ export default defineConfig([
     files: ['**/*.{ts,tsx}'],
     extends: [
       // Other configs...
+
       // Enable lint rules for React
       reactX.configs['recommended-typescript'],
       // Enable lint rules for React DOM
@@ -71,3 +99,13 @@ export default defineConfig([
   },
 ])
 ```
+
+## React + TypeScript + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs) for Fast Refresh
+
