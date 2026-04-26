@@ -18,6 +18,8 @@ import { MeetingsModule } from './meetings/meetings.module';
         COOKIE_KEY: Joi.string().required(),
         NODE_ENV: Joi.string().required(),
         JWT_EXPIRES_IN: Joi.string().required(),
+        PORT: Joi.number().default(3000),
+        CORS_ORIGINS: Joi.string().default('http://localhost:5173'),
       }),
     }),
     TypeOrmModule.forRootAsync({

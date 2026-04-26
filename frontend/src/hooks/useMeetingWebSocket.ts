@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import type { MeetingCostUpdate, MeetingParticipant, Meeting } from '@/api/types';
 
-const SOCKET_URL = 'http://localhost:3000/meetings';
+const SOCKET_URL = `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/meetings`;
 
 type MeetingWebSocketEvents = {
   onCostUpdate?: (data: MeetingCostUpdate) => void;

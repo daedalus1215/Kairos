@@ -18,13 +18,7 @@ type AuthenticatedSocket = Socket & {
 };
 
 @Injectable()
-@WebSocketGateway({
-  cors: {
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
-    credentials: true,
-  },
-  namespace: '/meetings',
-})
+                                                                                                                                                                                                                                                    @WebSocketGateway({ namespace: '/meetings' })
 export class MeetingsGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
