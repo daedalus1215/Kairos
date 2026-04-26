@@ -10,6 +10,7 @@ const bootstrap = async (): Promise<void> => {
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') ?? 3000;
+  const host = configService.get<string>('HOST') ?? '0.0.0.0';
   const corsOrigins = (
     configService.get<string>('CORS_ORIGINS') ?? 'http://localhost:5173'
   )
@@ -37,9 +38,10 @@ const bootstrap = async (): Promise<void> => {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(port);
-  console.log(`Kairos API running on http://localhost:${port}`);
-  console.log(`Swagger documentation at http://localhost:${port}/api`);
+  await app.listen(port, host);
+  const url = await app.getUrl();
+  console.log(`Kairos API running on ${url}`);
+  console.log(`Swagger documentation at ${url}/api`);
 };
 
 bootstrap();

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import * as Joi from 'joi';
+import Joi from 'joi';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ParticipantsModule } from './participants/participants.module';
@@ -19,6 +19,7 @@ import { MeetingsModule } from './meetings/meetings.module';
         NODE_ENV: Joi.string().required(),
         JWT_EXPIRES_IN: Joi.string().required(),
         PORT: Joi.number().default(3000),
+        HOST: Joi.string().default('0.0.0.0'),
         CORS_ORIGINS: Joi.string().default('http://localhost:5173'),
       }),
     }),
