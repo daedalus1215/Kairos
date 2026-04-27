@@ -12,11 +12,12 @@ const bootstrap = async (): Promise<void> => {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') ?? 3000;
   const host = configService.get<string>('HOST') ?? '0.0.0.0';
-  const corsOrigins = (
-    configService.get<string>('CORS_ORIGINS') ?? 'http://localhost:5173'
-  )
-    .split(',')
-    .map((o) => o.trim());
+  const corsOriginsRaw =
+    configService.get<string>('CORS_ORIGINS') ?? 'http://localhost:5173';
+  const corsOrigins =
+    corsOriginsRaw === '*'
+      ? true
+      : corsOriginsRaw.split(',').map((o) => o.trim());
 
   app.enableCors({ origin: corsOrigins, credentials: true });
   app.useWebSocketAdapter(new ConfigurableIoAdapter(app));
