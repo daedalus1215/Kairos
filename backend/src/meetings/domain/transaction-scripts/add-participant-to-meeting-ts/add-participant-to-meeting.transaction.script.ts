@@ -4,60 +4,55 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { MeetingRepository } from 'src/meetings/infra/repositories/meeting.repository';
-import { MeetingParticipantRepository } from 'src/meetings/infra/repositories/meeting-participant.repository';
-import { ParticipantRepository } from 'src/participants/infra/repositories/participant.repository';
-import { AddParticipantDto } from 'src/meetings/apps/dtos/requests/add-participant.dto';
-import { MeetingParticipant } from 'src/meetings/domain/entities/meeting-participant.entity';
-import { MEETING_STATUS } from 'src/meetings/domain/entities/meeting.entity';
+import { MeetingRepository } from '../../../infra/repositories/meeting.repository';
+import { MeetingParticipantRepository } from '../../../infra/repositories/meeting-participant.repository';
+import { MeetingParticipant } from '../../../domain/entities/meeting-participant.entity';
+import { MEETING_STATUS } from '../../../domain/entities/meeting.entity';
+import { AddParticipantToMeetingCommand } from '../../../domain/commands/add-participant-to-meeting.command';
+import { ParticipantAggregatorPort } from '../../../domain/ports/participant-aggregator.port';
 
 @Injectable()
 export class AddParticipantToMeetingTransactionScript {
   constructor(
     private readonly meetingRepository: MeetingRepository,
     private readonly meetingParticipantRepository: MeetingParticipantRepository,
-    private readonly participantRepository: ParticipantRepository,
+    private readonly participantAggregator: ParticipantAggregatorPort,
   ) {}
 
-  apply = async (
-    meetingId: number,
-    dto: AddParticipantDto,
-    userId: number,
-  ): Promise<MeetingParticipant> => {
-    const meeting = await this.meetingRepository.findById(meetingId);
+  apply = async (command: AddParticipantToMeetingCommand): Promise<MeetingParticipant> => {
+    const meeting = await this.meetingRepository.findById(command.meetingId);
     if (!meeting) {
       throw new NotFoundException('Meeting not found');
     }
-    if (meeting.userId !== userId) {
+    if (meeting.userId !== command.userId) {
       throw new ForbiddenException('Access denied');
     }
     if (meeting.status !== MEETING_STATUS.ACTIVE) {
       throw new BadRequestException('Meeting is not active');
     }
 
-    const participant = await this.participantRepository.findByIdAndUserId(
-      dto.participantId,
-      userId,
+    const participant = await this.participantAggregator.findByIdAndUserId(
+      command.participantId,
+      command.userId,
     );
     if (!participant) {
       throw new NotFoundException('Participant not found');
     }
 
-    // Check if participant is already in the meeting
     const existingParticipant =
       await this.meetingParticipantRepository.findByMeetingAndParticipant(
-        meetingId,
-        dto.participantId,
+        command.meetingId,
+        command.participantId,
       );
     if (existingParticipant) {
       throw new BadRequestException('Participant is already in the meeting');
     }
 
     return this.meetingParticipantRepository.create({
-      meetingId,
-      participantId: dto.participantId,
+      meetingId: command.meetingId,
+      participantId: command.participantId,
       joinedAt: new Date(),
-      rateOverride: dto.rateOverride ?? null,
+      rateOverride: command.rateOverride ?? null,
       costContribution: 0,
     });
   };

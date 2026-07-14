@@ -1,28 +1,22 @@
-import { Controller, Get, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/shared-kernel/apps/guards/jwt-auth.guard';
+import { Get, Param, ParseIntPipe } from '@nestjs/common';
 import {
   CurrentUser,
   CurrentUserPayload,
 } from 'src/shared-kernel/apps/decorators/current-user.decorator';
-import { MeetingService } from 'src/meetings/domain/services/meeting.service';
-import { MeetingResponseDto } from 'src/meetings/apps/dtos/responses/meeting-response.dto';
+import { MeetingService, MeetingDetailProjection } from 'src/meetings/domain/services/meeting.service';
+import { MeetingsController } from 'src/meetings/apps/controllers/meetings.controller';
+import { GetMeetingSwagger } from './get-meeting.swagger';
 
-@ApiTags('Meetings')
-@Controller('meetings')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
+@MeetingsController()
 export class GetMeetingAction {
   constructor(private readonly meetingService: MeetingService) {}
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a meeting by ID' })
-  @ApiResponse({ status: 200, description: 'Meeting found' })
-  @ApiResponse({ status: 404, description: 'Meeting not found' })
+  @GetMeetingSwagger()
   apply(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: CurrentUserPayload,
-  ): Promise<MeetingResponseDto> {
+  ): Promise<MeetingDetailProjection> {
     return this.meetingService.findOne(id, user.userId);
   }
 }

@@ -55,6 +55,12 @@ export class MeetingRepository {
     });
   };
 
+  findAllActive = async (): Promise<Meeting[]> => {
+    return this.repository.find({
+      where: { status: MEETING_STATUS.ACTIVE },
+    });
+  };
+
   create = async (data: Partial<Meeting>): Promise<Meeting> => {
     const meeting = this.repository.create(data);
     return this.repository.save(meeting);

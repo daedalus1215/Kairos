@@ -1,18 +1,14 @@
-import { Controller, Post, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/shared-kernel/apps/guards/jwt-auth.guard';
+import { Post, Param, ParseIntPipe } from '@nestjs/common';
 import {
   CurrentUser,
   CurrentUserPayload,
 } from 'src/shared-kernel/apps/decorators/current-user.decorator';
-import { MeetingService } from 'src/meetings/domain/services/meeting.service';
+import { MeetingService, MeetingDetailProjection } from 'src/meetings/domain/services/meeting.service';
 import { MeetingsGateway } from 'src/meetings/apps/gateways/meetings.gateway';
-import { MeetingResponseDto } from 'src/meetings/apps/dtos/responses/meeting-response.dto';
+import { MeetingsController } from 'src/meetings/apps/controllers/meetings.controller';
+import { EndMeetingSwagger } from './end-meeting.swagger';
 
-@ApiTags('Meetings')
-@Controller('meetings')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
+@MeetingsController()
 export class EndMeetingAction {
   constructor(
     private readonly meetingService: MeetingService,
@@ -20,16 +16,16 @@ export class EndMeetingAction {
   ) {}
 
   @Post(':id/end')
-  @ApiOperation({ summary: 'End a meeting' })
-  @ApiResponse({ status: 200, description: 'Meeting ended successfully' })
-  @ApiResponse({ status: 404, description: 'Meeting not found' })
+  @EndMeetingSwagger()
   async apply(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: CurrentUserPayload,
-  ): Promise<MeetingResponseDto> {
+  ): Promise<MeetingDetailProjection> {
+    this.meetingsGateway.discardPendingParticipants(id);
+    this.meetingsGateway.stopCostCalculation(id);
+    this.meetingsGateway.removePausedMeeting(id);
     const meeting = await this.meetingService.endMeeting(id, user.userId);
     this.meetingsGateway.broadcastToMeeting(id, 'meeting:end', meeting);
-    this.meetingsGateway.stopCostCalculation(id);
     return meeting;
   }
 }

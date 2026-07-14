@@ -11,6 +11,8 @@ import { GetParticipantsAction } from './apps/actions/get-participants-action/ge
 import { GetParticipantAction } from './apps/actions/get-participant-action/get-participant.action';
 import { UpdateParticipantAction } from './apps/actions/update-participant-action/update-participant.action';
 import { DeleteParticipantAction } from './apps/actions/delete-participant-action/delete-participant.action';
+import { ParticipantAggregator } from './domain/aggregators/participant-aggregator';
+import { PARTICIPANT_AGGREGATOR } from 'src/meetings/domain/ports/participant-aggregator.port';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Participant])],
@@ -27,7 +29,12 @@ import { DeleteParticipantAction } from './apps/actions/delete-participant-actio
     CreateParticipantTransactionScript,
     UpdateParticipantTransactionScript,
     DeleteParticipantTransactionScript,
+    ParticipantAggregator,
+    {
+      provide: PARTICIPANT_AGGREGATOR,
+      useClass: ParticipantAggregator,
+    },
   ],
-  exports: [ParticipantRepository, ParticipantService],
+  exports: [ParticipantRepository, ParticipantService, PARTICIPANT_AGGREGATOR],
 })
 export class ParticipantsModule {}

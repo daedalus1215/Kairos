@@ -20,7 +20,33 @@ export type MeetingResponseDto = {
   totalCost: number;
   status: MeetingStatus;
   participants: MeetingParticipantResponseDto[];
+  pausedAt: Date | null;
+  totalPausedSeconds: number;
   createdAt: Date;
+};
+
+export type MeetingPauseDto = {
+  meetingId: number;
+  pausedAt: Date;
+  totalPausedSeconds: number;
+  totalCost: number;
+  elapsedSeconds: number;
+};
+
+export type MeetingResumeDto = {
+  meetingId: number;
+  resumedAt: Date;
+  totalPausedSeconds: number;
+  totalCost: number;
+  elapsedSeconds: number;
+};
+
+export type MeetingPendingParticipantDto = {
+  participantId: number;
+  participantName: string;
+  participantRole: string | null;
+  participantColor: string;
+  hourlyRate: number;
 };
 
 export type MeetingListResponseDto = {

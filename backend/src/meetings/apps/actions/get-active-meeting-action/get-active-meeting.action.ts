@@ -1,26 +1,21 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/shared-kernel/apps/guards/jwt-auth.guard';
+import { Get } from '@nestjs/common';
 import {
   CurrentUser,
   CurrentUserPayload,
 } from 'src/shared-kernel/apps/decorators/current-user.decorator';
-import { MeetingService } from 'src/meetings/domain/services/meeting.service';
-import { MeetingResponseDto } from 'src/meetings/apps/dtos/responses/meeting-response.dto';
+import { MeetingService, MeetingDetailProjection } from 'src/meetings/domain/services/meeting.service';
+import { MeetingsController } from 'src/meetings/apps/controllers/meetings.controller';
+import { GetActiveMeetingSwagger } from './get-active-meeting.swagger';
 
-@ApiTags('Meetings')
-@Controller('meetings')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
+@MeetingsController()
 export class GetActiveMeetingAction {
   constructor(private readonly meetingService: MeetingService) {}
 
   @Get('active')
-  @ApiOperation({ summary: 'Get the current active meeting' })
-  @ApiResponse({ status: 200, description: 'Active meeting or null' })
+  @GetActiveMeetingSwagger()
   apply(
     @CurrentUser() user: CurrentUserPayload,
-  ): Promise<MeetingResponseDto | null> {
+  ): Promise<MeetingDetailProjection | null> {
     return this.meetingService.findActiveMeeting(user.userId);
   }
 }

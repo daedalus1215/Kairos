@@ -9,6 +9,7 @@ type ParticipantCardProps = {
   onRemove?: () => void;
   isActive?: boolean;
   showHourlyRate?: boolean;
+  badge?: string;
 };
 
 export const ParticipantCard = ({
@@ -16,6 +17,7 @@ export const ParticipantCard = ({
   onRemove,
   isActive = true,
   showHourlyRate = false,
+  badge,
 }: ParticipantCardProps) => {
   return (
     <Box
@@ -76,6 +78,18 @@ export const ParticipantCard = ({
                 backgroundColor: 'rgba(255, 255, 255, 0.1)',
                 color: 'text.secondary',
                 fontSize: '0.7rem',
+              }}
+            />
+          )}
+          {badge && (
+            <Chip
+              label={badge}
+              size="small"
+              sx={{
+                backgroundColor: 'rgba(255, 170, 0, 0.2)',
+                color: '#FFAA00',
+                fontSize: '0.7rem',
+                fontWeight: 600,
               }}
             />
           )}

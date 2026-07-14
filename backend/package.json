@@ -17,7 +17,11 @@
     "lint:check": "eslint \"{src,test}/**/*.ts\"",
     "test": "cross-env NODE_ENV=test jest",
     "test:watch": "cross-env NODE_ENV=test jest --watch --maxWorkers=1",
-    "test:cov": "cross-env NODE_ENV=test jest --coverage"
+    "test:cov": "cross-env NODE_ENV=test jest --coverage",
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/database/data-source",
+    "migration:create": "typeorm-ts-node-commonjs migration:create -d src/database/data-source",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/database/data-source",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.12",

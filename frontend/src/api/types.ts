@@ -41,7 +41,17 @@ export type Meeting = {
   totalCost: number;
   status: MeetingStatus;
   participants: MeetingParticipant[];
+  pausedAt: string | null;
+  totalPausedSeconds: number;
   createdAt: string;
+};
+
+export type PendingParticipant = {
+  participantId: number;
+  participantName: string;
+  participantRole: string | null;
+  participantColor: string;
+  hourlyRate: number;
 };
 
 export type MeetingNote = {

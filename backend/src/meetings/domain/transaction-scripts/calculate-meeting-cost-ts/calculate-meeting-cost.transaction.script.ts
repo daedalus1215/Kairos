@@ -1,40 +1,40 @@
 import { Injectable } from '@nestjs/common';
-import { MeetingRepository } from 'src/meetings/infra/repositories/meeting.repository';
-import { MeetingParticipantRepository } from 'src/meetings/infra/repositories/meeting-participant.repository';
-import { ParticipantRepository } from 'src/participants/infra/repositories/participant.repository';
-import { MeetingCostUpdateDto } from 'src/meetings/apps/dtos/responses/meeting-response.dto';
-import { MEETING_STATUS } from 'src/meetings/domain/entities/meeting.entity';
+import { MeetingRepository } from '../../../infra/repositories/meeting.repository';
+import { MeetingParticipantRepository } from '../../../infra/repositories/meeting-participant.repository';
+import { MEETING_STATUS } from '../../../domain/entities/meeting.entity';
+import { MeetingCostProjection } from '../../../domain/projections/meeting-cost.projection';
+import { ParticipantAggregatorPort } from '../../../domain/ports/participant-aggregator.port';
 
 @Injectable()
 export class CalculateMeetingCostTransactionScript {
   constructor(
     private readonly meetingRepository: MeetingRepository,
     private readonly meetingParticipantRepository: MeetingParticipantRepository,
-    private readonly participantRepository: ParticipantRepository,
+    private readonly participantAggregator: ParticipantAggregatorPort,
   ) {}
 
-  apply = async (meetingId: number): Promise<MeetingCostUpdateDto | null> => {
+  apply = async (meetingId: number): Promise<MeetingCostProjection | null> => {
     const meeting = await this.meetingRepository.findById(meetingId);
     if (!meeting || meeting.status !== MEETING_STATUS.ACTIVE) {
+      return null;
+    }
+    if (meeting.pausedAt !== null) {
       return null;
     }
 
     const now = new Date();
     const elapsedSeconds = Math.floor(
       (now.getTime() - meeting.startTime.getTime()) / 1000,
-    );
+    ) - (meeting.totalPausedSeconds ?? 0);
 
     const meetingParticipants =
       await this.meetingParticipantRepository.findByMeetingId(meetingId);
 
     let totalCost = 0;
-    const participantCosts: { participantId: number; costContribution: number }[] =
-      [];
+    const participantCosts: { participantId: number; costContribution: number }[] = [];
 
     for (const mp of meetingParticipants) {
-      const participant = await this.participantRepository.findById(
-        mp.participantId,
-      );
+      const participant = await this.participantAggregator.findById(mp.participantId);
       if (!participant) continue;
 
       const hourlyRate = mp.rateOverride ?? participant.hourlyRate;
@@ -46,20 +46,11 @@ export class CalculateMeetingCostTransactionScript {
       );
       const costContribution = participantSeconds * ratePerSecond;
 
-      // Update cost contribution in database
-      await this.meetingParticipantRepository.updateCostContribution(
-        mp.id,
-        costContribution,
-      );
-
+      await this.meetingParticipantRepository.updateCostContribution(mp.id, costContribution);
       totalCost += costContribution;
-      participantCosts.push({
-        participantId: mp.participantId,
-        costContribution,
-      });
+      participantCosts.push({ participantId: mp.participantId, costContribution });
     }
 
-    // Update total cost in meeting
     await this.meetingRepository.update(meetingId, { totalCost });
 
     return {

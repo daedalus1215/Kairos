@@ -4,10 +4,11 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { MeetingRepository } from 'src/meetings/infra/repositories/meeting.repository';
-import { MeetingParticipantRepository } from 'src/meetings/infra/repositories/meeting-participant.repository';
-import { MeetingParticipant } from 'src/meetings/domain/entities/meeting-participant.entity';
-import { MEETING_STATUS } from 'src/meetings/domain/entities/meeting.entity';
+import { MeetingRepository } from '../../../infra/repositories/meeting.repository';
+import { MeetingParticipantRepository } from '../../../infra/repositories/meeting-participant.repository';
+import { MeetingParticipant } from '../../../domain/entities/meeting-participant.entity';
+import { MEETING_STATUS } from '../../../domain/entities/meeting.entity';
+import { RemoveParticipantFromMeetingParams } from '../../../domain/commands/remove-participant-from-meeting.command';
 
 @Injectable()
 export class RemoveParticipantFromMeetingTransactionScript {
@@ -16,16 +17,12 @@ export class RemoveParticipantFromMeetingTransactionScript {
     private readonly meetingParticipantRepository: MeetingParticipantRepository,
   ) {}
 
-  apply = async (
-    meetingId: number,
-    participantId: number,
-    userId: number,
-  ): Promise<MeetingParticipant> => {
-    const meeting = await this.meetingRepository.findById(meetingId);
+  apply = async (params: RemoveParticipantFromMeetingParams): Promise<MeetingParticipant> => {
+    const meeting = await this.meetingRepository.findById(params.meetingId);
     if (!meeting) {
       throw new NotFoundException('Meeting not found');
     }
-    if (meeting.userId !== userId) {
+    if (meeting.userId !== params.userId) {
       throw new ForbiddenException('Access denied');
     }
     if (meeting.status !== MEETING_STATUS.ACTIVE) {
@@ -34,17 +31,16 @@ export class RemoveParticipantFromMeetingTransactionScript {
 
     const meetingParticipant =
       await this.meetingParticipantRepository.findByMeetingAndParticipant(
-        meetingId,
-        participantId,
+        params.meetingId,
+        params.participantId,
       );
     if (!meetingParticipant) {
       throw new NotFoundException('Participant is not in this meeting');
     }
 
-    const updated = await this.meetingParticipantRepository.update(
-      meetingParticipant.id,
-      { leftAt: new Date() },
-    );
+    const updated = await this.meetingParticipantRepository.update(meetingParticipant.id, {
+      leftAt: new Date(),
+    });
 
     if (!updated) {
       throw new NotFoundException('Failed to remove participant');

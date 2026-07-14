@@ -1,20 +1,19 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { MeetingRepository } from 'src/meetings/infra/repositories/meeting.repository';
-import { MeetingParticipantRepository } from 'src/meetings/infra/repositories/meeting-participant.repository';
-import { ParticipantRepository } from 'src/participants/infra/repositories/participant.repository';
-import { CreateMeetingDto } from 'src/meetings/apps/dtos/requests/create-meeting.dto';
-import { Meeting, MEETING_STATUS } from 'src/meetings/domain/entities/meeting.entity';
+import { MeetingRepository } from '../../../infra/repositories/meeting.repository';
+import { MeetingParticipantRepository } from '../../../infra/repositories/meeting-participant.repository';
+import { MEETING_STATUS, Meeting } from '../../../domain/entities/meeting.entity';
+import { StartMeetingCommand } from '../../../domain/commands/start-meeting.command';
+import { ParticipantAggregatorPort } from '../../../domain/ports/participant-aggregator.port';
 
 @Injectable()
 export class StartMeetingTransactionScript {
   constructor(
     private readonly meetingRepository: MeetingRepository,
     private readonly meetingParticipantRepository: MeetingParticipantRepository,
-    private readonly participantRepository: ParticipantRepository,
+    private readonly participantAggregator: ParticipantAggregatorPort,
   ) {}
 
-  apply = async (dto: CreateMeetingDto, userId: number): Promise<Meeting> => {
-    // Check if user already has an active meeting
+  apply = async (command: StartMeetingCommand, userId: number): Promise<Meeting> => {
     const activeMeeting = await this.meetingRepository.findActiveMeeting(userId);
     if (activeMeeting) {
       throw new BadRequestException('You already have an active meeting');
@@ -22,17 +21,16 @@ export class StartMeetingTransactionScript {
 
     const meeting = await this.meetingRepository.create({
       userId,
-      title: dto.title,
+      title: command.title,
       startTime: new Date(),
       status: MEETING_STATUS.ACTIVE,
       totalCost: 0,
     });
 
-    // Add initial participants if provided
-    if (dto.participantIds && dto.participantIds.length > 0) {
+    if (command.participantIds && command.participantIds.length > 0) {
       const joinedAt = new Date();
-      for (const participantId of dto.participantIds) {
-        const participant = await this.participantRepository.findByIdAndUserId(
+      for (const participantId of command.participantIds) {
+        const participant = await this.participantAggregator.findByIdAndUserId(
           participantId,
           userId,
         );

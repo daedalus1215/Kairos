@@ -1,19 +1,15 @@
-import { Controller, Post, Param, Body, ParseIntPipe, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/shared-kernel/apps/guards/jwt-auth.guard';
+import { Post, Param, Body, ParseIntPipe, BadRequestException } from '@nestjs/common';
 import {
   CurrentUser,
   CurrentUserPayload,
 } from 'src/shared-kernel/apps/decorators/current-user.decorator';
-import { MeetingService } from 'src/meetings/domain/services/meeting.service';
+import { MeetingService, MeetingParticipantProjection } from 'src/meetings/domain/services/meeting.service';
 import { MeetingsGateway } from 'src/meetings/apps/gateways/meetings.gateway';
 import { AddParticipantDto } from 'src/meetings/apps/dtos/requests/add-participant.dto';
-import { MeetingParticipantResponseDto } from 'src/meetings/apps/dtos/responses/meeting-response.dto';
+import { MeetingsController } from 'src/meetings/apps/controllers/meetings.controller';
+import { AddParticipantSwagger } from './add-participant.swagger';
 
-@ApiTags('Meetings')
-@Controller('meetings')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
+@MeetingsController()
 export class AddParticipantAction {
   constructor(
     private readonly meetingService: MeetingService,
@@ -21,18 +17,26 @@ export class AddParticipantAction {
   ) {}
 
   @Post(':id/participants')
-  @ApiOperation({ summary: 'Add a participant to a meeting' })
-  @ApiResponse({ status: 201, description: 'Participant added successfully' })
-  @ApiResponse({ status: 404, description: 'Meeting or participant not found' })
+  @AddParticipantSwagger()
   async apply(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AddParticipantDto,
     @CurrentUser() user: CurrentUserPayload,
-  ): Promise<MeetingParticipantResponseDto> {
+  ): Promise<MeetingParticipantProjection> {
+    const isPaused = await this.meetingsGateway.isMeetingPaused(id);
+    if (isPaused) {
+      await this.meetingsGateway.queuePendingParticipant(
+        id,
+        dto.participantId,
+        user.userId,
+      );
+      throw new BadRequestException('Meeting is paused; participant queued as pending');
+    }
     const participant = await this.meetingService.addParticipant(
       id,
-      dto,
+      dto.participantId,
       user.userId,
+      dto.rateOverride,
     );
     this.meetingsGateway.broadcastToMeeting(id, 'meeting:participant:add', participant);
     return participant;

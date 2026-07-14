@@ -14,7 +14,9 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import StopIcon from '@mui/icons-material/Stop';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import PausePresentationIcon from '@mui/icons-material/PausePresentation';
 import { Layout } from '@/components/Layout/Layout';
 import { GlassCard } from '@/components/GlassCard/GlassCard';
 import { CostDisplay } from '@/components/CostDisplay/CostDisplay';
@@ -23,7 +25,7 @@ import { ParticipantCard } from '@/components/ParticipantCard/ParticipantCard';
 import { useMeetingWebSocket } from '@/hooks/useMeetingWebSocket';
 import { meetingsApi } from '@/api/meetings.api';
 import { participantsApi } from '@/api/participants.api';
-import type { Meeting, Participant, MeetingCostUpdate, MeetingParticipant } from '@/api/types';
+import type { Meeting, Participant, MeetingCostUpdate, MeetingParticipant, PendingParticipant } from '@/api/types';
 
 export const ActiveMeetingPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +42,10 @@ export const ActiveMeetingPage = () => {
   const [participantCosts, setParticipantCosts] = useState<Map<number, number>>(
     new Map()
   );
+
+  // Pause state
+  const [isPaused, setIsPaused] = useState(false);
+  const [pendingParticipants, setPendingParticipants] = useState<PendingParticipant[]>([]);
 
   const handleCostUpdate = useCallback((data: MeetingCostUpdate) => {
     setTotalCost(data.totalCost);
@@ -77,11 +83,31 @@ export const ActiveMeetingPage = () => {
     navigate('/dashboard');
   }, [navigate]);
 
+  const handlePause = useCallback((data: { meetingId: number; pausedAt: string; totalPausedSeconds: number; totalCost: number; elapsedSeconds: number }) => {
+    setIsPaused(true);
+    setTotalCost(data.totalCost);
+    setElapsedSeconds(data.elapsedSeconds);
+  }, []);
+
+  const handleResume = useCallback((data: { meetingId: number; resumedAt: string; totalPausedSeconds: number; totalCost: number; elapsedSeconds: number }) => {
+    setIsPaused(false);
+    setPendingParticipants([]);
+    setTotalCost(data.totalCost);
+    setElapsedSeconds(data.elapsedSeconds);
+  }, []);
+
+  const handleParticipantPending = useCallback((data: PendingParticipant) => {
+    setPendingParticipants((prev) => [...prev, data]);
+  }, []);
+
   const { isConnected } = useMeetingWebSocket(meetingId, {
     onCostUpdate: handleCostUpdate,
     onParticipantAdd: handleParticipantAdd,
     onParticipantRemove: handleParticipantRemove,
     onMeetingEnd: handleMeetingEnd,
+    onPause: handlePause,
+    onResume: handleResume,
+    onParticipantPending: handleParticipantPending,
   });
 
   useEffect(() => {
@@ -103,9 +129,14 @@ export const ActiveMeetingPage = () => {
         setTotalCost(meetingData.totalCost);
         setAvailableParticipants(allParticipants);
 
-        // Calculate initial elapsed time
+        // Initialize pause state from server
+        if (meetingData.pausedAt) {
+          setIsPaused(true);
+        }
+
+        // Calculate initial elapsed time (accounting for pauses)
         const startTime = new Date(meetingData.startTime);
-        const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000);
+        const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000) - (meetingData.totalPausedSeconds ?? 0);
         setElapsedSeconds(elapsed);
       } catch (err) {
         setError('Failed to load meeting');
@@ -152,12 +183,52 @@ export const ActiveMeetingPage = () => {
     }
   };
 
+  const handlePauseMeeting = async () => {
+    if (!meetingId || isPaused) return;
+
+    try {
+      const result = await meetingsApi.pause(meetingId);
+      setIsPaused(true);
+      setTotalCost(result.totalCost);
+      setElapsedSeconds(result.elapsedSeconds);
+    } catch (err) {
+      console.error('Failed to pause meeting:', err);
+    }
+  };
+
+  const handleResumeMeeting = async () => {
+    if (!meetingId || !isPaused) return;
+
+    try {
+      const result = await meetingsApi.resume(meetingId);
+      setIsPaused(false);
+      setPendingParticipants([]);
+      setTotalCost(result.totalCost);
+      setElapsedSeconds(result.elapsedSeconds);
+    } catch (err) {
+      console.error('Failed to resume meeting:', err);
+    }
+  };
+
   const activeParticipants = meeting?.participants.filter((p) => !p.leftAt) || [];
   const inactiveParticipants = meeting?.participants.filter((p) => p.leftAt) || [];
   const participantsInMeeting = new Set(meeting?.participants.map((p) => p.participantId));
   const availableToAdd = availableParticipants.filter(
     (p) => !participantsInMeeting.has(p.id)
   );
+
+  // Connection status indicator color
+  const getStatusColor = () => {
+    if (!isConnected) return '#FF0000';
+    if (isPaused) return '#FFAA00';
+    return '#00FF00';
+  };
+
+  const getStatusText = () => {
+    if (!isConnected) return 'Connecting...';
+    if (isPaused) return 'Paused';
+    return 'Live';
+  };
 
   if (isLoading) {
     return (
@@ -207,41 +278,116 @@ export const ActiveMeetingPage = () => {
                   width: 12,
                   height: 12,
                   borderRadius: '50%',
-                  backgroundColor: isConnected ? '#00FF00' : '#FF0000',
-                  boxShadow: isConnected
-                    ? '0 0 10px #00FF00'
-                    : '0 0 10px #FF0000',
+                  backgroundColor: getStatusColor(),
+                  boxShadow: `0 0 10px ${getStatusColor()}`,
                 }}
               />
               <Typography variant="body2" color="text.secondary">
-                {isConnected ? 'Live' : 'Connecting...'}
+                {getStatusText()}
               </Typography>
             </Box>
             <Typography variant="h4" fontWeight={700}>
               {meeting.title}
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            color="error"
-            startIcon={<StopIcon />}
-            onClick={handleEndMeeting}
-            sx={{
-              boxShadow: '0 0 20px rgba(255, 0, 0, 0.3)',
-            }}
-          >
-            End Meeting
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {isPaused && (
+              <Button
+                variant="contained"
+                startIcon={<PlayArrowIcon />}
+                onClick={handleResumeMeeting}
+                sx={{
+                  backgroundColor: '#00F5FF',
+                  color: '#000',
+                  fontWeight: 600,
+                  boxShadow: '0 0 20px rgba(0, 245, 255, 0.3)',
+                  '&:hover': {
+                    backgroundColor: '#00d4d9',
+                  },
+                }}
+              >
+                Resume
+              </Button>
+            )}
+            {!isPaused && (
+              <Button
+                variant="outlined"
+                startIcon={<PausePresentationIcon />}
+                onClick={handlePauseMeeting}
+                sx={{
+                  borderColor: '#FFAA00',
+                  color: '#FFAA00',
+                  '&:hover': {
+                    borderColor: '#FFAA00',
+                    backgroundColor: 'rgba(255, 170, 0, 0.1)',
+                  },
+                }}
+              >
+                Pause
+              </Button>
+            )}
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<StopIcon />}
+              onClick={handleEndMeeting}
+              sx={{
+                boxShadow: '0 0 20px rgba(255, 0, 0, 0.3)',
+              }}
+            >
+              End Meeting
+            </Button>
+          </Box>
         </Box>
 
-        {/* Cost Display */}
-        <GlassCard glow="accent" sx={{ mb: 4, textAlign: 'center', py: 4 }}>
-          <Typography variant="overline" color="text.secondary" sx={{ mb: 2 }}>
-            Total Meeting Cost
-          </Typography>
-          <CostDisplay cost={totalCost} size="large" />
-          <Box sx={{ mt: 3 }}>
-            <Timer elapsedSeconds={elapsedSeconds} />
+        {/* Cost Display with Pause Overlay */}
+        <GlassCard glow="accent" sx={{ mb: 4, textAlign: 'center', py: 4, position: 'relative', overflow: 'hidden' }}>
+          {/* Pause overlay */}
+          <AnimatePresence>
+            {isPaused && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundColor: 'rgba(10, 10, 26, 0.8)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  zIndex: 10,
+                }}
+              >
+                <PausePresentationIcon
+                  sx={{
+                    fontSize: 64,
+                    color: '#FFAA00',
+                    mb: 1,
+                  }}
+                />
+                <Typography
+                  variant="h5"
+                  fontWeight={700}
+                  sx={{ color: '#FFAA00', letterSpacing: 3 }}
+                >
+                  PAUSED
+                </Typography>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Dim the underlying content when paused */}
+          <Box sx={{ opacity: isPaused ? 0.4 : 1, transition: 'opacity 0.3s' }}>
+            <Typography variant="overline" color="text.secondary" sx={{ mb: 2 }}>
+              Total Meeting Cost
+            </Typography>
+            <CostDisplay cost={totalCost} size="large" />
+            <Box sx={{ mt: 3 }}>
+              <Timer elapsedSeconds={elapsedSeconds} />
+            </Box>
           </Box>
         </GlassCard>
 
@@ -286,10 +432,42 @@ export const ActiveMeetingPage = () => {
                       participant.costContribution,
                   }}
                   onRemove={() => handleRemoveParticipant(participant.participantId)}
-                  isActive
+                  isActive={!isPaused}
                 />
               ))}
             </AnimatePresence>
+          </Box>
+        )}
+
+        {/* Pending Participants Section */}
+        {pendingParticipants.length > 0 && (
+          <Box sx={{ mt: 4 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ mb: 2, color: '#FFAA00' }}
+            >
+              Pending ({pendingParticipants.length}) — will join on resume
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {pendingParticipants.map((pp) => (
+                <ParticipantCard
+                  key={pp.participantId}
+                  participant={{
+                    id: 0,
+                    participantId: pp.participantId,
+                    participantName: pp.participantName,
+                    participantRole: pp.participantRole,
+                    participantColor: pp.participantColor,
+                    hourlyRate: pp.hourlyRate,
+                    joinedAt: '',
+                    leftAt: null,
+                    costContribution: 0,
+                  }}
+                  isActive={false}
+                  badge="PENDING"
+                />
+              ))}
+            </Box>
           </Box>
         )}
 

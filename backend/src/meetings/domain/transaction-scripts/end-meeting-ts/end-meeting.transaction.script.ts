@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { MeetingRepository } from 'src/meetings/infra/repositories/meeting.repository';
-import { MeetingParticipantRepository } from 'src/meetings/infra/repositories/meeting-participant.repository';
-import { Meeting, MEETING_STATUS } from 'src/meetings/domain/entities/meeting.entity';
+import { MeetingRepository } from '../../../infra/repositories/meeting.repository';
+import { MeetingParticipantRepository } from '../../../infra/repositories/meeting-participant.repository';
+import { Meeting, MEETING_STATUS } from '../../../domain/entities/meeting.entity';
+import { EndMeetingParams } from '../../../domain/commands/end-meeting.command';
 
 @Injectable()
 export class EndMeetingTransactionScript {
@@ -10,12 +11,12 @@ export class EndMeetingTransactionScript {
     private readonly meetingParticipantRepository: MeetingParticipantRepository,
   ) {}
 
-  apply = async (meetingId: number, userId: number): Promise<Meeting> => {
-    const meeting = await this.meetingRepository.findById(meetingId);
+  apply = async (params: EndMeetingParams): Promise<Meeting> => {
+    const meeting = await this.meetingRepository.findById(params.meetingId);
     if (!meeting) {
       throw new NotFoundException('Meeting not found');
     }
-    if (meeting.userId !== userId) {
+    if (meeting.userId !== params.userId) {
       throw new ForbiddenException('Access denied');
     }
     if (meeting.status !== MEETING_STATUS.ACTIVE) {
@@ -24,17 +25,14 @@ export class EndMeetingTransactionScript {
 
     const endTime = new Date();
 
-    // End all active participants
     const activeParticipants =
-      await this.meetingParticipantRepository.findActiveByMeetingId(meetingId);
+      await this.meetingParticipantRepository.findActiveByMeetingId(params.meetingId);
 
     for (const participant of activeParticipants) {
-      await this.meetingParticipantRepository.update(participant.id, {
-        leftAt: endTime,
-      });
+      await this.meetingParticipantRepository.update(participant.id, { leftAt: endTime });
     }
 
-    const updated = await this.meetingRepository.update(meetingId, {
+    const updated = await this.meetingRepository.update(params.meetingId, {
       endTime,
       status: MEETING_STATUS.ENDED,
     });

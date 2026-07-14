@@ -1,18 +1,14 @@
-import { Controller, Delete, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/shared-kernel/apps/guards/jwt-auth.guard';
+import { Delete, Param, ParseIntPipe } from '@nestjs/common';
 import {
   CurrentUser,
   CurrentUserPayload,
 } from 'src/shared-kernel/apps/decorators/current-user.decorator';
-import { MeetingService } from 'src/meetings/domain/services/meeting.service';
+import { MeetingService, MeetingParticipantProjection } from 'src/meetings/domain/services/meeting.service';
 import { MeetingsGateway } from 'src/meetings/apps/gateways/meetings.gateway';
-import { MeetingParticipantResponseDto } from 'src/meetings/apps/dtos/responses/meeting-response.dto';
+import { MeetingsController } from 'src/meetings/apps/controllers/meetings.controller';
+import { RemoveParticipantSwagger } from './remove-participant.swagger';
 
-@ApiTags('Meetings')
-@Controller('meetings')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
+@MeetingsController()
 export class RemoveParticipantAction {
   constructor(
     private readonly meetingService: MeetingService,
@@ -20,14 +16,12 @@ export class RemoveParticipantAction {
   ) {}
 
   @Delete(':id/participants/:participantId')
-  @ApiOperation({ summary: 'Remove a participant from a meeting' })
-  @ApiResponse({ status: 200, description: 'Participant removed successfully' })
-  @ApiResponse({ status: 404, description: 'Meeting or participant not found' })
+  @RemoveParticipantSwagger()
   async apply(
     @Param('id', ParseIntPipe) id: number,
     @Param('participantId', ParseIntPipe) participantId: number,
     @CurrentUser() user: CurrentUserPayload,
-  ): Promise<MeetingParticipantResponseDto> {
+  ): Promise<MeetingParticipantProjection> {
     const participant = await this.meetingService.removeParticipant(
       id,
       participantId,

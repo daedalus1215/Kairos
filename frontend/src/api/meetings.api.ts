@@ -8,6 +8,23 @@ import type {
   MeetingParticipant,
 } from './types';
 
+// Response types for pause/resume
+type MeetingPauseResponse = {
+  meetingId: number;
+  pausedAt: string;
+  totalPausedSeconds: number;
+  totalCost: number;
+  elapsedSeconds: number;
+};
+
+type MeetingResumeResponse = {
+  meetingId: number;
+  resumedAt: string;
+  totalPausedSeconds: number;
+  totalCost: number;
+  elapsedSeconds: number;
+};
+
 export const meetingsApi = {
   getAll: async (options?: {
     status?: string;
@@ -103,5 +120,15 @@ export const meetingsApi = {
 
   deleteNote: async (meetingId: number, noteId: number): Promise<void> => {
     await api.delete(`/meetings/${meetingId}/notes/${noteId}`);
+  },
+
+  pause: async (id: number): Promise<MeetingPauseResponse> => {
+    const { data } = await api.post<MeetingPauseResponse>(`/meetings/${id}/pause`);
+    return data;
+  },
+
+  resume: async (id: number): Promise<MeetingResumeResponse> => {
+    const { data } = await api.post<MeetingResumeResponse>(`/meetings/${id}/resume`);
+    return data;
   },
 };

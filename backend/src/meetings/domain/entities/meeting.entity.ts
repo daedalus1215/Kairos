@@ -48,6 +48,16 @@ export class Meeting {
   })
   status: MeetingStatus;
 
+  @Column({ name: 'paused_at', type: 'datetime', nullable: true })
+  pausedAt: Date | null;
+
+  @Column({
+    name: 'total_paused_seconds',
+    type: 'int',
+    default: 0,
+  })
+  totalPausedSeconds: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

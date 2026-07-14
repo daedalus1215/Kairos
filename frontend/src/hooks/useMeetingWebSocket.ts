@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { MeetingCostUpdate, MeetingParticipant, Meeting } from '@/api/types';
+import type { MeetingCostUpdate, MeetingParticipant, Meeting, PendingParticipant } from '@/api/types';
 
 const SOCKET_URL = `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/meetings`;
 
@@ -9,6 +9,9 @@ type MeetingWebSocketEvents = {
   onParticipantAdd?: (data: MeetingParticipant) => void;
   onParticipantRemove?: (data: MeetingParticipant) => void;
   onMeetingEnd?: (data: Meeting) => void;
+  onPause?: (data: { meetingId: number; pausedAt: string; totalPausedSeconds: number; totalCost: number; elapsedSeconds: number }) => void;
+  onResume?: (data: { meetingId: number; resumedAt: string; totalPausedSeconds: number; totalCost: number; elapsedSeconds: number }) => void;
+  onParticipantPending?: (data: PendingParticipant) => void;
 };
 
 export const useMeetingWebSocket = (
@@ -73,6 +76,18 @@ export const useMeetingWebSocket = (
       eventsRef.current.onMeetingEnd?.(data);
     });
 
+    socket.on('meeting:pause', (data) => {
+      eventsRef.current.onPause?.(data);
+    });
+
+    socket.on('meeting:resume', (data) => {
+      eventsRef.current.onResume?.(data);
+    });
+
+    socket.on('meeting:participant:pending', (data: PendingParticipant) => {
+      eventsRef.current.onParticipantPending?.(data);
+    });
+
     return () => {
       socket.emit('meeting:leave', { meetingId });
       socket.disconnect();
@@ -80,6 +95,15 @@ export const useMeetingWebSocket = (
       setIsConnected(false);
     };
   }, [meetingId]); // Only reconnect when meetingId changes
+
+  // Helper to emit pause/resume via WebSocket
+  const emitPause = () => {
+    socketRef.current?.emit('meeting:pause', { meetingId });
+  };
+
+  const emitResume = () => {
+    socketRef.current?.emit('meeting:resume', { meetingId });
+  };
 
   const disconnect = () => {
     if (socketRef.current && meetingId) {
@@ -90,5 +114,5 @@ export const useMeetingWebSocket = (
     }
   };
 
-  return { isConnected, disconnect };
+  return { isConnected, disconnect, emitPause, emitResume };
 };

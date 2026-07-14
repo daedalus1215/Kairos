@@ -1,29 +1,26 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/shared-kernel/apps/guards/jwt-auth.guard';
+import { Post, Body } from '@nestjs/common';
 import {
   CurrentUser,
   CurrentUserPayload,
 } from 'src/shared-kernel/apps/decorators/current-user.decorator';
-import { MeetingService } from 'src/meetings/domain/services/meeting.service';
+import { MeetingService, MeetingDetailProjection } from 'src/meetings/domain/services/meeting.service';
 import { CreateMeetingDto } from 'src/meetings/apps/dtos/requests/create-meeting.dto';
-import { MeetingResponseDto } from 'src/meetings/apps/dtos/responses/meeting-response.dto';
+import { MeetingsController } from 'src/meetings/apps/controllers/meetings.controller';
+import { StartMeetingSwagger } from './start-meeting.swagger';
 
-@ApiTags('Meetings')
-@Controller('meetings')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
+@MeetingsController()
 export class StartMeetingAction {
   constructor(private readonly meetingService: MeetingService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Start a new meeting' })
-  @ApiResponse({ status: 201, description: 'Meeting started successfully' })
-  @ApiResponse({ status: 400, description: 'Already have an active meeting' })
+  @StartMeetingSwagger()
   apply(
     @Body() dto: CreateMeetingDto,
     @CurrentUser() user: CurrentUserPayload,
-  ): Promise<MeetingResponseDto> {
-    return this.meetingService.startMeeting(dto, user.userId);
+  ): Promise<MeetingDetailProjection> {
+    return this.meetingService.startMeeting(
+      { title: dto.title, participantIds: dto.participantIds },
+      user.userId,
+    );
   }
 }
