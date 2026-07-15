@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Meeting } from '../entities/meeting.entity';
 import { MeetingParticipantRepository } from '../../infra/repositories/meeting-participant.repository';
-import { ParticipantAggregatorPort } from '../ports/participant-aggregator.port';
+import { ParticipantAggregatorPort, PARTICIPANT_AGGREGATOR } from '../ports/participant-aggregator.port';
 import { MeetingCostProjection } from '../projections/meeting-cost.projection';
 import { MEETING_STATUS } from '../entities/meeting.entity';
 
@@ -9,6 +9,7 @@ import { MEETING_STATUS } from '../entities/meeting.entity';
 export class MeetingCostMapper {
   constructor(
     private readonly meetingParticipantRepository: MeetingParticipantRepository,
+    @Inject(PARTICIPANT_AGGREGATOR)
     private readonly participantAggregator: ParticipantAggregatorPort,
   ) {}
 

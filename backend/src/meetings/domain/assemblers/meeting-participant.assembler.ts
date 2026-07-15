@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { MeetingParticipant } from '../entities/meeting-participant.entity';
-import { ParticipantAggregatorPort, ParticipantProjection } from '../ports/participant-aggregator.port';
+import { ParticipantAggregatorPort, PARTICIPANT_AGGREGATOR, ParticipantProjection } from '../ports/participant-aggregator.port';
 import { MeetingParticipantProjection } from '../projections/meeting-detail.projection';
 
 @Injectable()
 export class MeetingParticipantAssembler {
   constructor(
+    @Inject(PARTICIPANT_AGGREGATOR)
     private readonly participantAggregator: ParticipantAggregatorPort,
   ) {}
 

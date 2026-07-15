@@ -8,7 +8,6 @@ import { MeetingNote } from './domain/entities/meeting-note.entity';
 import { MeetingService } from './domain/services/meeting.service';
 import { MeetingsGateway } from './apps/gateways/meetings.gateway';
 import { ParticipantsModule } from 'src/participants/participants.module';
-import { PARTICIPANT_AGGREGATOR } from './domain/ports/participant-aggregator.port';
 import { actionRegistry } from './registries/action.registry';
 import { repositoryRegistry } from './registries/repository.registry';
 import { transactionScriptRegistry } from './registries/transaction-script.registry';
@@ -40,10 +39,6 @@ import { MeetingNoteAssembler } from './domain/assemblers/meeting-note.assembler
     MeetingNoteAssembler,
     ...repositoryRegistry,
     ...transactionScriptRegistry,
-    {
-      provide: PARTICIPANT_AGGREGATOR,
-      useExisting: PARTICIPANT_AGGREGATOR,
-    },
   ],
   exports: [MeetingService, MeetingsGateway],
 })

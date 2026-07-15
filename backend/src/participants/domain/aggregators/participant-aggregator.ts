@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ParticipantRepository } from './participant.repository';
+import { ParticipantRepository } from 'src/participants/infra/repositories/participant.repository';
 import {
   ParticipantAggregatorPort,
   ParticipantProjection,

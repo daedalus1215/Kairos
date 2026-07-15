@@ -1,16 +1,17 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Inject } from '@nestjs/common';
 import { MeetingRepository } from '../../../infra/repositories/meeting.repository';
 import { MeetingParticipantRepository } from '../../../infra/repositories/meeting-participant.repository';
 import { MEETING_STATUS } from '../../../domain/entities/meeting.entity';
 import { ResumeMeetingParams, PendingParticipant } from '../../../domain/commands/resume-meeting.command';
 import { MeetingResumeProjection } from '../../../domain/projections/meeting-resume.projection';
-import { ParticipantAggregatorPort } from '../../../domain/ports/participant-aggregator.port';
+import { ParticipantAggregatorPort, PARTICIPANT_AGGREGATOR } from '../../../domain/ports/participant-aggregator.port';
 
 @Injectable()
 export class ResumeMeetingTransactionScript {
   constructor(
     private readonly meetingRepository: MeetingRepository,
     private readonly meetingParticipantRepository: MeetingParticipantRepository,
+    @Inject(PARTICIPANT_AGGREGATOR)
     private readonly participantAggregator: ParticipantAggregatorPort,
   ) {}
 

@@ -1,15 +1,16 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { MeetingRepository } from '../../../infra/repositories/meeting.repository';
 import { MeetingParticipantRepository } from '../../../infra/repositories/meeting-participant.repository';
 import { MEETING_STATUS, Meeting } from '../../../domain/entities/meeting.entity';
 import { StartMeetingCommand } from '../../../domain/commands/start-meeting.command';
-import { ParticipantAggregatorPort } from '../../../domain/ports/participant-aggregator.port';
+import { ParticipantAggregatorPort, PARTICIPANT_AGGREGATOR } from '../../../domain/ports/participant-aggregator.port';
 
 @Injectable()
 export class StartMeetingTransactionScript {
   constructor(
     private readonly meetingRepository: MeetingRepository,
     private readonly meetingParticipantRepository: MeetingParticipantRepository,
+    @Inject(PARTICIPANT_AGGREGATOR)
     private readonly participantAggregator: ParticipantAggregatorPort,
   ) {}
 

@@ -1,5 +1,5 @@
-import { applyDecorators, Get, ApiResponse, ApiQuery } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { applyDecorators, Get } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 
 export const GetMeetingsSwagger = () =>
   applyDecorators(

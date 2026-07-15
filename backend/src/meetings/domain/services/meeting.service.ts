@@ -202,3 +202,4 @@ export { MeetingPauseProjection } from '../projections/meeting-pause.projection'
 export { MeetingResumeProjection } from '../projections/meeting-resume.projection';
 export { MeetingCostProjection } from '../projections/meeting-cost.projection';
 export { MeetingNoteProjection } from '../projections/meeting-note.projection';
+export { PendingParticipantProjection } from '../projections/pending-participant.projection';

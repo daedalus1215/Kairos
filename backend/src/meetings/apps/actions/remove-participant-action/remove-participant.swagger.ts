@@ -1,5 +1,5 @@
-import { applyDecorators, Delete, Param, ApiResponse } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { applyDecorators, Delete, Param } from '@nestjs/common';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 export const RemoveParticipantSwagger = () =>
   applyDecorators(
