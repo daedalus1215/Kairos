@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+// Same-origin by default: the Ingress routes /api to the backend and / to this app, so
+// one build is correct in every environment and VITE_API_URL is optional.
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
