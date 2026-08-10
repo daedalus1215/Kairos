@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ParticipantsModule } from './participants/participants.module';
 import { MeetingsModule } from './meetings/meetings.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -13,7 +14,11 @@ import { MeetingsModule } from './meetings/meetings.module';
       isGlobal: true,
       envFilePath: ['.env', `.env.${process.env.NODE_ENV}`],
       validationSchema: Joi.object({
-        DATABASE: Joi.string().required(),
+        DB_HOST: Joi.string().required(),
+        DB_PORT: Joi.number().default(5432),
+        DB_USER: Joi.string().required(),
+        DB_PASSWORD: Joi.string().required(),
+        DB_NAME: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
         COOKIE_KEY: Joi.string().required(),
         NODE_ENV: Joi.string().required(),
@@ -26,8 +31,12 @@ import { MeetingsModule } from './meetings/meetings.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        type: 'sqlite',
-        database: configService.get<string>('DATABASE'),
+        type: 'postgres',
+        host: configService.get<string>('DB_HOST'),
+        port: configService.get<number>('DB_PORT'),
+        username: configService.get<string>('DB_USER'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: process.env.NODE_ENV === 'development',
         logging: process.env.NODE_ENV === 'development',
@@ -41,7 +50,7 @@ import { MeetingsModule } from './meetings/meetings.module';
     ParticipantsModule,
     MeetingsModule,
   ],
-  controllers: [],
+  controllers: [HealthController],
   providers: [],
 })
-export class AppModule {}
+export class AppModule { }

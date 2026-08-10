@@ -8,19 +8,19 @@ import {
 @Entity({ name: 'meeting_participants' })
 export class MeetingParticipant {
   @PrimaryGeneratedColumn({ type: 'int' })
-  id: number;
+  id!: number;
 
   @Column({ name: 'meeting_id', type: 'int' })
-  meetingId: number;
+  meetingId!: number;
 
   @Column({ name: 'participant_id', type: 'int' })
-  participantId: number;
+  participantId!: number;
 
-  @Column({ name: 'joined_at', type: 'datetime' })
-  joinedAt: Date;
+  @Column({ name: 'joined_at', type: 'timestamptz' })
+  joinedAt!: Date;
 
-  @Column({ name: 'left_at', type: 'datetime', nullable: true })
-  leftAt: Date | null;
+  @Column({ name: 'left_at', type: 'timestamptz', nullable: true })
+  leftAt!: Date | null;
 
   @Column({
     name: 'rate_override',
@@ -29,7 +29,7 @@ export class MeetingParticipant {
     scale: 2,
     nullable: true,
   })
-  rateOverride: number | null;
+  rateOverride!: number | null;
 
   @Column({
     name: 'cost_contribution',
@@ -38,8 +38,8 @@ export class MeetingParticipant {
     scale: 2,
     default: 0,
   })
-  costContribution: number;
+  costContribution!: number;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt!: Date;
 }

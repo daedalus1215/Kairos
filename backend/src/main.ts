@@ -9,6 +9,11 @@ import { ConfigurableIoAdapter } from './io-adapter';
 const bootstrap = async (): Promise<void> => {
   const app = await NestFactory.create(AppModule);
 
+  // Everything the HTTP API serves lives under /api, so a single hostname can be split
+  // by path: /api -> this backend, / -> the frontend. Does NOT affect the WebSocket
+  // gateway, whose '/meetings' namespace is unchanged.
+  app.setGlobalPrefix('api');
+
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') ?? 3000;
   const host = configService.get<string>('HOST') ?? '0.0.0.0';
@@ -38,7 +43,8 @@ const bootstrap = async (): Promise<void> => {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  // 'api' now belongs to the API itself; the docs move to /docs.
+  SwaggerModule.setup('docs', app, document);
 
   await app.listen(port, host);
 
@@ -48,9 +54,9 @@ const bootstrap = async (): Promise<void> => {
     .find((iface) => iface && iface.family === 'IPv4' && !iface.internal)
     ?.address ?? 'localhost';
 
-  console.log(`Kairos API running on http://localhost:${port} (local)`);
-  console.log(`Kairos API running on http://${localIp}:${port} (network)`);
-  console.log(`Swagger documentation at http://${localIp}:${port}/api`);
+  console.log(`Kairos API running on http://localhost:${port}/api (local)`);
+  console.log(`Kairos API running on http://${localIp}:${port}/api (network)`);
+  console.log(`Swagger documentation at http://${localIp}:${port}/docs`);
 };
 
 bootstrap();

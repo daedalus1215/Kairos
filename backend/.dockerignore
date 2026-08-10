@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+
+# Secrets and local state — baking either into the image would ship your
+# credentials and your old SQLite database to every node that pulls it.
+.env
+.env.*
+!.env.example
+*.sqlite
+
+.git
+.gitignore
+Dockerfile
+.dockerignore
+*.log

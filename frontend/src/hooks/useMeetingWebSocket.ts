@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import type { MeetingCostUpdate, MeetingParticipant, Meeting, PendingParticipant } from '@/api/types';
 
-const SOCKET_URL = `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}/meetings`;
+// This is a socket.io NAMESPACE, not a URL path. The transport always connects to
+// <origin>/socket.io/ and the namespace travels inside the handshake — so this must be
+// exactly what the gateway declares (@WebSocketGateway({ namespace: '/meetings' })).
+// Prefixing it with the API base would produce a namespace the server has never heard
+// of: REST would keep working and live updates would silently never connect.
+const SOCKET_URL = '/meetings';
 
 type MeetingWebSocketEvents = {
   onCostUpdate?: (data: MeetingCostUpdate) => void;
